@@ -36,6 +36,23 @@ Tras el preprocesado y filtrado, el conjunto de datos se separa en tres particio
 
 La partición es **estratificada** respecto a `ideology_binary` y se mantiene fija en todos los experimentos, de forma que los resultados de los distintos modelos sean comparables.
 
+### 1.2. Hipótesis de trabajo
+
+A partir del análisis exploratorio inicial (distribución de clases, frecuencias léxicas, nubes de palabras y primer cálculo del proxy de desinformación), se plantean las siguientes hipótesis:
+
+- **H1 (polarización léxica):**  
+  Los tuits de izquierda y derecha utilizan marcos léxicos diferentes. En la izquierda se espera una mayor presencia de términos relacionados con derechos sociales y servicios públicos (por ejemplo, `derechos`, `mujeres`, `pública`, `social`, `personas`), mientras que en la derecha se anticipa más énfasis en identidad nacional y orden público (por ejemplo, `españoles`, `libertad`, `impuestos`, `sedición`, `eta`, `golpistas`).
+
+- **H2 (desinformación y lenguaje polarizado):**  
+  Los tuits que contienen vocabulario relacionado con desinformación (según el proxy de palabras clave) tienden a usar un lenguaje más conflictivo y emocional que los que no lo contienen, con referencias más frecuentes a delitos, fraudes, engaños, etc. Se espera que este tipo de mensajes aparezca en contextos donde la polarización ideológica es mayor.
+
+- **H3 (asimetría ideológica suave):**  
+  Aunque el proxy es muy limitado, la ligera sobrerrepresentación de tuits de izquierda entre los mensajes con palabras de desinformación sugiere que podría existir cierta asimetría en cómo cada polo habla de bulos y desinformación (ya sea para difundirlos o para denunciarlos). Esta hipótesis deberá contrastarse con modelos supervisados más robustos y con representaciones vectoriales del texto (TF-IDF, Word2Vec, BERT).
+
+- **H4 (capacidad de los modelos):**  
+  Se espera que los modelos basados en representaciones contextuales (por ejemplo, BERT en español) capturen mejor estos matices de polarización y desinformación que los baselines simples basados en bolsa de palabras (TF-IDF) o en promedios de Word2Vec.
+
+
 ---
 
 ## 2. Metodología
@@ -291,27 +308,59 @@ Interpretación:
 
 ## 4. Conclusiones
 
-A partir de los experimentos realizados se pueden extraer las siguientes conclusiones:
+## 4. Resultados y conclusiones
+
+### 4.1. Conclusiones
 
 1. **Clasificación de ideología**  
-   - Es posible predecir la ideología binaria (`left` / `right`) a partir del texto de los tuits con una accuracy en torno al **65–75 %** y F1-macro similar, dependiendo del modelo.
-   - Los modelos lineales (Logistic Regression) combinados con TF-IDF ofrecen ya un baseline sólido.
-   - Las redes neuronales (MLP) en PyTorch permiten exprimir algo más las representaciones TF-IDF y BERT, logrando ligeras mejoras.
-   - El fine-tuning de BERT proporciona resultados competitivos en torno al **75 %**, aunque con un coste computacional sensiblemente mayor.
+   - Es posible predecir la ideología binaria (`left` / `right`) a partir del texto de los tuits con un rendimiento razonable: los modelos se sitúan aproximadamente entre un **65 % y un 75 % de accuracy y F1-macro**, según la arquitectura utilizada.  
+   - Los modelos lineales (Logistic Regression) combinados con TF-IDF constituyen un **baseline sólido y estable**.  
+   - Las redes neuronales (MLP) en PyTorch permiten exprimir mejor las representaciones TF-IDF y BERT, obteniendo mejoras moderadas sobre los modelos lineales.  
+   - El fine-tuning de BERT se sitúa como la **estrategia más potente**, alcanzando alrededor de un 75 % de accuracy y F1-macro en test, a costa de un coste computacional sensiblemente mayor.
 
 2. **Comparación de representaciones**  
-   - **TF-IDF** sigue siendo una representación muy efectiva para tareas de clasificación de texto en dominios específicos como el político.
-   - **Word2Vec** con promedio de embeddings pierde parte de la información contextual y, en este problema, rinde peor que TF-IDF. Aunque podría ser debido al refinado, habría que intentar mejorarlo.
-   - Los **embeddings contextuales de BERT** aportan una representación rica, que combinada con un MLP o mediante fine-tuning alcanza niveles de rendimiento superiores a las técnicas clásicas de forma sencilla.
+   - **TF-IDF** resulta ser una representación muy efectiva para esta tarea, especialmente combinada con modelos lineales o con un MLP sencillo.  
+   - **Word2Vec** con promedio de embeddings pierde parte de la información contextual y, en este problema concreto, ofrece un rendimiento inferior incluso cuando se usa con redes neuronales.  
+   - Los **embeddings contextuales de BERT** aportan una representación más rica del texto:  
+     - En modo congelado (BERT + LogReg / MLP) logran resultados competitivos, cercanos a TF-IDF + MLP.  
+     - Cuando se realiza **fine-tuning completo**, BERT supera con claridad a las técnicas clásicas y se convierte en el mejor modelo del proyecto.
 
 3. **Desinformación y polarización**  
-   - El análisis léxico de desinformación muestra que la mención explícita a bulos y fake news es relativamente poco frecuente y se distribuye de forma bastante equilibrada entre izquierda y derecha.
-   - No se observa, con este enfoque, una relación estadísticamente significativa entre la ideología binaria y la presencia de términos de desinformación.
-   - Para profundizar en la relación entre desinformación y polarización sería necesario disponer de anotaciones explícitas de veracidad al igual que existe de ideología.
+   - El análisis léxico de desinformación (basado en un pequeño léxico de palabras clave como `bulo`, `fake news`, `mentira`, etc.) muestra que la mención explícita a estos términos es relativamente **poco frecuente** (en torno a un 1–2 % de los tuits).  
+   - La distribución de este proxy de desinformación es **muy similar entre izquierda y derecha** y no se observa una relación estadísticamente significativa con la ideología binaria.  
+   - Para profundizar en la relación entre desinformación y polarización sería necesario disponer de anotaciones explícitas de veracidad o aplicar modelos específicos de stance/sentimiento que vayan más allá del simple conteo de palabras clave.
 
 4. **Líneas futuras**  
-   - Incorporar modelos de **stance detection** o análisis de sentimiento para caracterizar mejor la postura del autor respecto a temas potencialmente desinformativos.
-   - Explorar mecanismos de **atención** o explicabilidad que permitan identificar fragmentos del texto que contribuyen más a la predicción de ideología.
+   - Incorporar modelos de **stance detection** o análisis de sentimiento para caracterizar mejor la postura del autor respecto a temas potencialmente desinformativos.  
+   - Explorar mecanismos de **atención** o técnicas de explicabilidad que permitan identificar qué fragmentos del texto contribuyen más a la predicción de ideología o al posible vínculo con desinformación.   
+
+### 4.2. Interpretación de resultados en relación con las hipótesis
+
+A la luz de los resultados obtenidos, se puede hacer el siguiente contraste cualitativo de las hipótesis de partida:
+
+- **H1 (polarización léxica)**  
+  El análisis exploratorio muestra que izquierda y derecha comparten un núcleo de vocabulario muy similar (`gobierno`, `españa`, `ley`, `madrid`, `política`, etc.). Sin embargo, los modelos de clasificación alcanzan métricas claramente por encima del azar (en torno a 0.68 con TF-IDF + MLP y alrededor de 0.75 con BERT fine-tuned), lo que implica que existen patrones léxicos más sutiles (combinaciones de términos, n-gramas y contexto) que permiten discriminar la ideología.  
+  **Conclusión:** H1 se ve parcialmente confirmada: hay señal de polarización léxica.
+
+- **H2 (desinformación y lenguaje polarizado)**  
+  El proxy de desinformación basado en palabras clave (`bulo`, `fake news`, `mentira`, etc.) identifica un porcentaje muy pequeño de tuits y no se ha complementado con un análisis específico del tono emocional o del grado de conflictividad del lenguaje.  
+  **Conclusión:** con el enfoque actual, H2 no puede confirmarse y se requieren herramientas adicionales para evaluar el componente emocional o polarizado del leguaje asociado a desinformación.
+
+- **H3 (asimetría ideológica suave en desinformación)**  
+  Aunque inicialmente se observan ligeras diferencias en la proporción de tuits con vocabulario de desinformación entre izquierda y derecha, la prueba chi-cuadrado da un p-valor ≈ 0.18 (> 0.05). Es decir, las diferencias observadas son compatibles con la variabilidad aleatoria del muestreo y no alcanzan significación estadística.  
+  **Conclusión:** H3 no queda confirmada ya que no se detecta una asimetría clara en la forma en que cada bloque menciona explícitamente bulos o desinformación.
+
+- **H4 (capacidad de los modelos)**  
+  La comparación sistemática entre representaciones y modelos muestra que:
+  - Word2Vec con promedio de embeddings queda por debajo de TF-IDF incluso cuando se entrena un MLP.  
+  - TF-IDF combinado con MLP configura un baseline clásico muy competitivo, sencillo de entrenar e interpretar.  
+  - Los embeddings contextuales de BERT en modo congelado mejoran a Word2Vec y se sitúan cerca de TF-IDF + MLP, pero el salto cualitativo llega con el **fine-tuning completo**, que proporciona las mejores métricas del proyecto.  
+  Esto confirma que los modelos contextuales son capaces de capturar mejor la estructura semántica y los matices de polarización cuando se les permite adaptar sus pesos.
+  **Conclusión:** H4 se confirma: BERT fine-tuned supera claramente a las representaciones clásicas, aunque TF-IDF + MLP sigue siendo interesantes con una relación coste–beneficio muy razonable en este dataset.
+
+En conjunto, los experimentos confirman que existe señal suficiente en el texto para predecir la ideología con un rendimiento razonable, pero la relación entre desinformación ) y polarización ideológica es más difícil de capturar y no muestra patrones claros con las métricas actuales.
+
+
 
 ---
 
